@@ -46,11 +46,7 @@ levelNums = [
 ]
 
 
-def generate(args, dest):
-
-    # Download music
-    download(args)
-
+def generate(playlistUrl, dest):
     # generate colors and pack name
     randomColor1 = randomcolor()
     randomColor2 = randomcolor()
@@ -59,8 +55,12 @@ def generate(args, dest):
     packName = "owokitty-generated-music-pack-" + randomColor1
 
     # generate sound folder
-    downloads = "downloads/"
+    if "http" in playlistUrl:
+        downloads = "downloads/"
+    else:
+        downloads = playlistUrl
     trackFilenames = os.listdir(downloads)
+    trackFilenames = [file for file in trackFilenames if file[-4:] == ".mp3" ]
     random.shuffle(levelNums)
     random.shuffle(trackFilenames)
     os.makedirs(dest + packName + "/sound/")
@@ -85,7 +85,7 @@ def generate(args, dest):
             randomColor3=randomColor3,
             randomColor4=randomColor4,
             tracks=tracks,
-            playlistUrl=', '.join(args),
+            playlistUrl=playlistUrl,
         )
     )
 
@@ -142,7 +142,7 @@ def slugify(value, allow_unicode=False):
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: [yt-dlp playlist url]")
+        print("usage: ./music-pack-generator.py [yt-dlp playlist url | local album directory]")
         exit(1)
 
     destination = "./"
@@ -154,7 +154,18 @@ def main():
         else:
             print("warning: Termux detected but no Termux storage access permission!")
 
-    generate(sys.argv[1:], destination)
+    args = sys.argv[1:]
+
+    # if someone has an edge case for having a folder named "http" they will figure it out
+    if any("http" in x for x in args):
+        # Download music
+        download(args)
+
+        # generate pack
+        generate(', '.join(args), destination)
+    else:
+        # generate pack
+        generate(args[0], destination)
 
 
 if __name__ == "__main__":

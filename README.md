@@ -1,5 +1,5 @@
 # music-pack-generator-coop
-Converts yt-dlp playlist URLs into randomly generated music packs for sm64ex-coop
+Converts yt-dlp playlist URLs or local albums into randomly generated music packs for sm64ex-coop
 
 ### Example of use on Android
 ```
