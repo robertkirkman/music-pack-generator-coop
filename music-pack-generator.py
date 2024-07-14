@@ -124,7 +124,7 @@ def download(args, all):
         "ignoreerrors": True,
     }
 
-    if all:
+    if not all:
         ydl_opts["playlist_items"] = "1:" + str(len(levels))
 
     with YoutubeDL(ydl_opts) as ydl:
