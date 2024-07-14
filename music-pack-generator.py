@@ -34,18 +34,6 @@ levels = {
     "21": "Bowser3",
 }
 
-# 50,  # EXTRA1
-# 51,  # EXTRA2
-# 52,  # EXTRA3
-# 53,  # EXTRA4
-# 54,  # EXTRA5
-# 55,  # EXTRA6
-# 56,  # EXTRA7
-# 57,  # EXTRA8
-# 58,  # EXTRA9
-# 59,  # EXTRA10
-# 60,  # EXTRA11
-
 
 def generate(playlistUrl, dest, interactive):
     # generate colors and pack name
@@ -72,7 +60,7 @@ def generate(playlistUrl, dest, interactive):
         while not accept:
             print("Generated Tracklist:")
             for track in tracks:
-                print(levels[track["levelNum"]].ljust(16, ' ') + ": " + track["name"])
+                print(levels[track["levelNum"]].ljust(16, " ") + ": " + track["name"])
             if input("Is this acceptable? (yes/no): ") == "yes":
                 accept = True
                 break
@@ -121,7 +109,7 @@ def generate_album(source, trackFilenames, dest):
     return tracks
 
 
-def download(args):
+def download(args, all):
     ydl_opts = {
         "external_downloader": {"default": "ffmpeg"},
         "external_downloader_args": {"ffmpeg": ["-t", "90", "-b:a", "128k"]},
@@ -134,9 +122,10 @@ def download(args):
         ],
         "outtmpl": "downloads/%(uploader)s-%(title)s.%(ext)s",
         "ignoreerrors": True,
-        # Comment this to unlimit the total number of downloaded tracks beyond the number of levels
-        "playlist_items": "1:" + str(len(levels)),
     }
+
+    if all:
+        ydl_opts["playlist_items"] = "1:" + str(len(levels))
 
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download(args)
@@ -177,8 +166,10 @@ def main():
 
     destination = "./"
     android_destination = "/storage/emulated/0/com.owokitty.sm64excoop/user/mods/"
-    flag = "--interactive"
+    interactiveFlag = "--interactive"
+    allPlaylistTracksFlag = "--all"
     interactive = False
+    allPlaylistTracks = False
 
     if os.getenv("TERMUX_VERSION"):
         if os.access(android_destination, os.W_OK | os.X_OK):
@@ -188,19 +179,24 @@ def main():
 
     args = sys.argv[1:]
 
-    if flag in args:
+    if interactiveFlag in args:
         interactive = True
 
+    if allPlaylistTracksFlag in args:
+        allPlaylistTracks = True
+
+    ytdlpArgs = [i for i in args if i != interactiveFlag and i != allPlaylistTracksFlag]
+
     # if someone has an edge case for having a folder named "http" they will figure it out
-    if any("http" in x for x in args):
+    if any("http" in x for x in ytdlpArgs):
         # Download music
-        download(args)
+        download(ytdlpArgs, allPlaylistTracks)
 
         # generate pack
-        generate(", ".join(args), destination, interactive)
+        generate(", ".join(ytdlpArgs), destination, interactive)
     else:
         # generate pack
-        generate(args[0], destination, interactive)
+        generate(ytdlpArgs[0], destination, interactive)
 
 
 if __name__ == "__main__":
