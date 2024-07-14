@@ -9,7 +9,7 @@ git clone https://www.github.com/robertkirkman/music-pack-generator-coop.git
 cd music-pack-generator-coop
 pip install -r requirements.txt
 mkdir -p /storage/emulated/0/com.owokitty.sm64excoop/user/mods
-./music-pack-generator.py https://www.youtube.com/playlist?list=PLp_G0HWfCo5raQSCb_BxY6oA1OVnNBolc
+./music-pack-generator.py https://www.youtube.com/playlist?list=PLp_G0HWfCo5raQSCb_BxY6oA1OVnNBolc --interactive
 ```
 
 
