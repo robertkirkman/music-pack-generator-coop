@@ -4,7 +4,7 @@ Converts yt-dlp playlist URLs into randomly generated music packs for sm64ex-coo
 ### Example of use on Android
 ```
 termux-setup-storage
-pkg install git python-pip
+pkg install git python-pip ffmpeg
 git clone https://www.github.com/robertkirkman/music-pack-generator-coop.git
 cd music-pack-generator-coop
 pip install -r requirements.txt
