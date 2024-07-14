@@ -97,19 +97,23 @@ def generate_album(source, trackFilenames, dest):
     os.makedirs(dest)
     tracks = []
     for level in levels:
+        if not (len(tracks) < len(levels)) or not len(newFilenames):
+            break
         filename = newFilenames.pop(0)
         slugname = slugify(filename)
         sourceFile = source + filename
         destinationFile = dest + slugname
         shutil.copyfile(sourceFile, destinationFile)
-        if len(tracks) < len(levels):
-            tracks.append({"levelNum": level, "name": slugname})
-        else:
-            break
+        tracks.append({"levelNum": level, "name": slugname})
     return tracks
 
 
 def download(args, all):
+    try:
+        shutil.rmtree("downloads/")
+    except Exception as e:
+        pass
+
     ydl_opts = {
         "external_downloader": {"default": "ffmpeg"},
         "external_downloader_args": {"ffmpeg": ["-t", "90", "-b:a", "128k"]},
