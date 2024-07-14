@@ -8,45 +8,46 @@ import jinja2
 import unicodedata
 from yt_dlp import YoutubeDL
 
-levelNums = [
-    9,  # BobOmb
-    5,  # CoolCool
-    6,  # CastleWalls
-    24,  # ThwompFort
-    10,  # Snowman
-    17,  # Bowser1
-    19,  # Bowser2
-    -2,  # PowerUp
-    26,  # Courtyard
-    11,  # WetDry
-    27,  # Slide
-    12,  # JollyRoger
-    23,  # DireDireDocks
-    20,  # SecretWatter
-    4,  # BigBoo
-    7,  # HazyMaze
-    22,  # LethalLava
-    8,  # ShiftingSand
-    36,  # TallTallMountain
-    13,  # TinyHugeIsland
-    14,  # TickTockClock
-    15,  # RainbowRide
-    21,  # Bowser3
-    # 50,  # EXTRA1
-    # 51,  # EXTRA2
-    # 52,  # EXTRA3
-    # 53,  # EXTRA4
-    # 54,  # EXTRA5
-    # 55,  # EXTRA6
-    # 56,  # EXTRA7
-    # 57,  # EXTRA8
-    # 58,  # EXTRA9
-    # 59,  # EXTRA10
-    # 60,  # EXTRA11
-]
+levels = {
+    "9": "BobOmb",
+    "5": "CoolCool",
+    "6": "CastleWalls",
+    "24": "ThwompFort",
+    "10": "Snowman",
+    "17": "Bowser1",
+    "19": "Bowser2",
+    "-2": "PowerUp",
+    "26": "Courtyard",
+    "11": "WetDry",
+    "27": "Slide",
+    "12": "JollyRoger",
+    "23": "DireDireDocks",
+    "20": "SecretWatter",
+    "4": "BigBoo",
+    "7": "HazyMaze",
+    "22": "LethalLava",
+    "8": "ShiftingSand",
+    "36": "TallTallMountain",
+    "13": "TinyHugeIsland",
+    "14": "TickTockClock",
+    "15": "RainbowRide",
+    "21": "Bowser3",
+}
+
+# 50,  # EXTRA1
+# 51,  # EXTRA2
+# 52,  # EXTRA3
+# 53,  # EXTRA4
+# 54,  # EXTRA5
+# 55,  # EXTRA6
+# 56,  # EXTRA7
+# 57,  # EXTRA8
+# 58,  # EXTRA9
+# 59,  # EXTRA10
+# 60,  # EXTRA11
 
 
-def generate(playlistUrl, dest):
+def generate(playlistUrl, dest, interactive):
     # generate colors and pack name
     randomColor1 = randomcolor()
     randomColor2 = randomcolor()
@@ -54,26 +55,31 @@ def generate(playlistUrl, dest):
     randomColor4 = randomcolor()
     packName = "owokitty-generated-music-pack-" + randomColor1
 
-    # generate sound folder
+    # set up sound folder
     if "http" in playlistUrl:
-        downloads = "downloads/"
+        sourceFolder = "downloads/"
     else:
-        downloads = playlistUrl
-    trackFilenames = os.listdir(downloads)
-    trackFilenames = [file for file in trackFilenames if file[-4:] == ".mp3" ]
-    random.shuffle(levelNums)
-    random.shuffle(trackFilenames)
-    os.makedirs(dest + packName + "/sound/")
-    tracks = []
-    for filename in trackFilenames:
-        slugname = slugify(filename)
-        source = downloads + filename
-        destination = dest + packName + "/sound/" + slugname
-        shutil.copyfile(source, destination)
-        if len(tracks) < len(levelNums):
-            tracks.append({"levelNum": str(levelNums[len(tracks)]), "name": slugname})
-        else:
-            break
+        sourceFolder = playlistUrl + "/"
+    trackFilenames = os.listdir(sourceFolder)
+    trackFilenames = [file for file in trackFilenames if file[-4:] == ".mp3"]
+
+    # generate sound folder
+    tracks = generate_album(sourceFolder, trackFilenames, dest + packName + "/sound/")
+
+    # in interactive mode, keep regenerating the sound folder until done
+    if interactive:
+        accept = False
+        while not accept:
+            print("Generated Tracklist:")
+            for track in tracks:
+                print(levels[track["levelNum"]].ljust(16, ' ') + ": " + track["name"])
+            if input("Is this acceptable? (yes/no): ") == "yes":
+                accept = True
+                break
+            else:
+                tracks = generate_album(
+                    sourceFolder, trackFilenames, dest + packName + "/sound/"
+                )
 
     # generate main.lua
     mainLua = (
@@ -88,19 +94,37 @@ def generate(playlistUrl, dest):
             playlistUrl=playlistUrl,
         )
     )
-
     with open(dest + packName + "/main.lua", "w") as f:
         f.write(mainLua)
 
 
-def randomcolor():
-    return f"{random.randrange(0x1000000):06x}"
+def generate_album(source, trackFilenames, dest):
+    newFilenames = []
+    newFilenames.extend(trackFilenames)
+    random.shuffle(newFilenames)
+    try:
+        shutil.rmtree(dest)
+    except Exception as e:
+        pass
+    os.makedirs(dest)
+    tracks = []
+    for level in levels:
+        filename = newFilenames.pop(0)
+        slugname = slugify(filename)
+        sourceFile = source + filename
+        destinationFile = dest + slugname
+        shutil.copyfile(sourceFile, destinationFile)
+        if len(tracks) < len(levels):
+            tracks.append({"levelNum": level, "name": slugname})
+        else:
+            break
+    return tracks
 
 
 def download(args):
     ydl_opts = {
-        'external_downloader': {'default': 'ffmpeg'},
-        'external_downloader_args': {'ffmpeg': ['-t', '90', '-b:a', '128k']},
+        "external_downloader": {"default": "ffmpeg"},
+        "external_downloader_args": {"ffmpeg": ["-t", "90", "-b:a", "128k"]},
         "format": "mp3/bestaudio/best",
         "postprocessors": [
             {  # Extract audio using ffmpeg
@@ -111,7 +135,7 @@ def download(args):
         "outtmpl": "downloads/%(uploader)s-%(title)s.%(ext)s",
         "ignoreerrors": True,
         # Comment this to unlimit the total number of downloaded tracks beyond the number of levels
-        "playlist_items": "1:" + str(len(levelNums)),
+        "playlist_items": "1:" + str(len(levels)),
     }
 
     with YoutubeDL(ydl_opts) as ydl:
@@ -140,13 +164,21 @@ def slugify(value, allow_unicode=False):
     return re.sub(r"[.\s]+", ".", value).strip("._")
 
 
+def randomcolor():
+    return f"{random.randrange(0x1000000):06x}"
+
+
 def main():
     if len(sys.argv) < 2:
-        print("usage: ./music-pack-generator.py [yt-dlp playlist url | local album directory]")
+        print(
+            "usage: ./music-pack-generator.py [yt-dlp playlist url | local album directory] (--interactive)"
+        )
         exit(1)
 
     destination = "./"
     android_destination = "/storage/emulated/0/com.owokitty.sm64excoop/user/mods/"
+    flag = "--interactive"
+    interactive = False
 
     if os.getenv("TERMUX_VERSION"):
         if os.access(android_destination, os.W_OK | os.X_OK):
@@ -156,16 +188,19 @@ def main():
 
     args = sys.argv[1:]
 
+    if flag in args:
+        interactive = True
+
     # if someone has an edge case for having a folder named "http" they will figure it out
     if any("http" in x for x in args):
         # Download music
         download(args)
 
         # generate pack
-        generate(', '.join(args), destination)
+        generate(", ".join(args), destination, interactive)
     else:
         # generate pack
-        generate(args[0], destination)
+        generate(args[0], destination, interactive)
 
 
 if __name__ == "__main__":
