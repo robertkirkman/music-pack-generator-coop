@@ -25,14 +25,54 @@ local audioMainPaused = false
 local audioMain = nil --Used for the main audio
 local audioSpecial = nil --Used for things like cap music
 local audioCurSeq = nil
+local playingRequest = nil
+
+function printAlbum()
+    tracklist = {}
+    count = 0
+    for _, track in pairs(bgms) do
+        count = count + 1
+
+        tracklist[count] = track.name
+    end
+    table.sort(tracklist)
+    for _, track in ipairs(tracklist) do
+        djui_chat_message_create(track)
+    end
+end
+
+function play(request)
+    simLevelNum = searchTracks(request)
+    if (simLevelNum == nil) then
+        djui_chat_message_create("[Music Player] Couldn't find " .. request)
+        return
+    end
+    djui_chat_message_create("[Music Player] Playing " .. bgms[simLevelNum].name)
+    playingRequest = simLevelNum
+end
+
+function searchTracks(keyword)
+    for levelNum, track in pairs(bgms) do
+        if string.find(track.name, keyword) then
+            return levelNum
+        end
+    end
+    return nil
+end
 
 function handleMusic()
 	------------------------------------------------------
     --          Handle stopping/starting of music       --
 	------------------------------------------------------
 	--Handle main course music
-    if (curMap ~= gNetworkPlayers[0].currLevelNum and gMarioStates[0].area.macroObjects ~= nil) then
-        curMap = gNetworkPlayers[0].currLevelNum
+    if ((playingRequest ~= nil and curMap ~= playingRequest) or
+	    (playingRequest == nil and curMap ~= gNetworkPlayers[0].currLevelNum) and
+		 gMarioStates[0].area.macroObjects ~= nil) then
+        if (playingRequest ~= nil) then
+            curMap = playingRequest
+        else
+            curMap = gNetworkPlayers[0].currLevelNum
+        end
 		audioCurSeq = get_current_background_music()
         if (audioMain ~= nil) then
             audio_stream_stop(audioMain)
@@ -57,6 +97,7 @@ function handleMusic()
 
 	--Handle cap music
 	if (gMarioStates[0].capTimer > 0 and bgms[-2] ~= nil) then
+		playingRequest = nil
 		--Handle pausing main streamed music, if applicable.
 		if (audioMain ~= nil and audioMainPaused == false) then
 			audioMainPaused = true
@@ -78,6 +119,7 @@ function handleMusic()
 		end	
 	else
 		if (audioSpecial ~= nil) then
+			playingRequest = nil
 			audio_stream_stop(audioSpecial)
 			audio_stream_destroy(audioSpecial)
 			audioSpecial = nil
@@ -86,7 +128,6 @@ function handleMusic()
 				audio_stream_play(audioMain, false, bgms[curMap].volume)
 			else
 				set_background_music(0, audioCurSeq, 10) 
-			
 			end
 		end
 	end
@@ -97,6 +138,7 @@ function handleMusic()
     if (audioMain ~= nil) then 
 		local curPosition = audio_stream_get_position(audioMain)
 		if (curPosition >= bgms[curMap].loopEnd ) then
+			playingRequest = nil
 			local minus = bgms[curMap].loopStart - bgms[curMap].loopEnd
 			audio_stream_set_position(audioMain, curPosition - math.abs(minus))
 		end
@@ -104,6 +146,7 @@ function handleMusic()
 	if (audioSpecial ~= nil) then
 		local curPosition = audio_stream_get_position(audioSpecial)
 		if (curPosition >= bgms[-2].loopEnd) then
+			playingRequest = nil
 			local minus = bgms[-2].loopStart - bgms[-2].loopEnd
 			audio_stream_set_position(audioSpecial, curPosition - math.abs(minus))
 		end
@@ -133,7 +176,7 @@ function hud_render()
 		local screenHeight = djui_hud_get_screen_height()
         local height = 64
         local y = screenHeight - height
-        djui_hud_set_color(pauseMenuMusicRGBA[1], pauseMenuMusicRGBA[2], pauseMenuMusicRGBA[3], pauseMenuMusicRGBA[4]);		
+        djui_hud_set_color(pauseMenuMusicRGBA[1], pauseMenuMusicRGBA[2], pauseMenuMusicRGBA[3], pauseMenuMusicRGBA[4]);
 		local text = "";
 		if (pauseMenuShowLevelID == true) then
 			text = "Level ID: " .. gNetworkPlayers[0].currLevelNum
@@ -182,6 +225,8 @@ function nomusic()
     end
 end
 
+hook_chat_command("playtrack", "\\#{{randomColor1}}\\[partial track name]\\#{{randomColor3}}\\ play track given search term", play)
+hook_chat_command("tracklist", "\\#{{randomColor2}}\\ print tracklist", printAlbum)
 hook_event(HOOK_ON_HUD_RENDER, hud_render)
 hook_event(HOOK_UPDATE, handleMusic)
 hook_event(HOOK_UPDATE, nomusic)

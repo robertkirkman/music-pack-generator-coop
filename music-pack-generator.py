@@ -124,7 +124,7 @@ def download(args, all):
                 "preferredcodec": "mp3",
             }
         ],
-        "outtmpl": "downloads/%(uploader)s-%(title)s.%(ext)s",
+        "outtmpl": "downloads/%(playlist_index)02d.%(uploader)s-%(title)s.%(ext)s",
         "ignoreerrors": True,
     }
 
