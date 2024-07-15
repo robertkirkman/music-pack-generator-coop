@@ -25,7 +25,7 @@ local audioMainPaused = false
 local audioMain = nil --Used for the main audio
 local audioSpecial = nil --Used for things like cap music
 local audioCurSeq = nil
-local playingRequest = nil
+gGlobalSyncTable.playingRequest = nil
 
 function printAlbum()
     tracklist = {}
@@ -48,7 +48,7 @@ function play(request)
         return
     end
     djui_chat_message_create("[Music Player] Playing " .. bgms[simLevelNum].name)
-    playingRequest = simLevelNum
+    gGlobalSyncTable.playingRequest = simLevelNum
 end
 
 function searchTracks(keyword)
@@ -65,11 +65,11 @@ function handleMusic()
     --          Handle stopping/starting of music       --
 	------------------------------------------------------
 	--Handle main course music
-    if ((playingRequest ~= nil and curMap ~= playingRequest) or
-	    (playingRequest == nil and curMap ~= gNetworkPlayers[0].currLevelNum) and
+    if ((gGlobalSyncTable.playingRequest ~= nil and curMap ~= gGlobalSyncTable.playingRequest) or
+	    (gGlobalSyncTable.playingRequest == nil and curMap ~= gNetworkPlayers[0].currLevelNum) and
 		 gMarioStates[0].area.macroObjects ~= nil) then
-        if (playingRequest ~= nil) then
-            curMap = playingRequest
+        if (gGlobalSyncTable.playingRequest ~= nil) then
+            curMap = gGlobalSyncTable.playingRequest
         else
             curMap = gNetworkPlayers[0].currLevelNum
         end
@@ -97,7 +97,7 @@ function handleMusic()
 
 	--Handle cap music
 	if (gMarioStates[0].capTimer > 0 and bgms[-2] ~= nil) then
-		playingRequest = nil
+		gGlobalSyncTable.playingRequest = nil
 		--Handle pausing main streamed music, if applicable.
 		if (audioMain ~= nil and audioMainPaused == false) then
 			audioMainPaused = true
@@ -119,7 +119,7 @@ function handleMusic()
 		end	
 	else
 		if (audioSpecial ~= nil) then
-			playingRequest = nil
+			gGlobalSyncTable.playingRequest = nil
 			audio_stream_stop(audioSpecial)
 			audio_stream_destroy(audioSpecial)
 			audioSpecial = nil
@@ -138,7 +138,7 @@ function handleMusic()
     if (audioMain ~= nil) then 
 		local curPosition = audio_stream_get_position(audioMain)
 		if (curPosition >= bgms[curMap].loopEnd ) then
-			playingRequest = nil
+			gGlobalSyncTable.playingRequest = nil
 			local minus = bgms[curMap].loopStart - bgms[curMap].loopEnd
 			audio_stream_set_position(audioMain, curPosition - math.abs(minus))
 		end
@@ -146,7 +146,7 @@ function handleMusic()
 	if (audioSpecial ~= nil) then
 		local curPosition = audio_stream_get_position(audioSpecial)
 		if (curPosition >= bgms[-2].loopEnd) then
-			playingRequest = nil
+			gGlobalSyncTable.playingRequest = nil
 			local minus = bgms[-2].loopStart - bgms[-2].loopEnd
 			audio_stream_set_position(audioSpecial, curPosition - math.abs(minus))
 		end
