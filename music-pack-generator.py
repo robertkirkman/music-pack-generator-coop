@@ -34,6 +34,7 @@ levels = {
     "21": "Bowser3",
 }
 
+downloadsFolder = "whenThisWasNamedDownloadsItDeletedSomeonesDownloads/"
 
 def generate(playlistUrl, dest, interactive):
     # generate colors and pack name
@@ -45,7 +46,7 @@ def generate(playlistUrl, dest, interactive):
 
     # set up sound folder
     if "http" in playlistUrl:
-        sourceFolder = "downloads/"
+        sourceFolder = downloadsFolder
     else:
         sourceFolder = playlistUrl + "/"
     trackFilenames = os.listdir(sourceFolder)
@@ -110,7 +111,7 @@ def generate_album(source, trackFilenames, dest):
 
 def download(args, all):
     try:
-        shutil.rmtree("downloads/")
+        shutil.rmtree(downloadsFolder)
     except Exception as e:
         pass
 
@@ -124,7 +125,7 @@ def download(args, all):
                 "preferredcodec": "mp3",
             }
         ],
-        "outtmpl": "downloads/%(playlist_index)02d.%(uploader)s-%(title)s.%(ext)s",
+        "outtmpl": downloadsFolder + "%(playlist_index)02d.%(uploader)s-%(title)s.%(ext)s",
         "ignoreerrors": True,
     }
 
